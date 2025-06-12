@@ -207,69 +207,74 @@ def produto_info(df: DataFrame, item_selecionado, cd_empresa):
         return
     cod_item = item_selecionado["CD_ITEM"].values[0]
     df = df[df["CD_ITEM"] == cod_item]
+    if not df.empty:
+        col1_1, col1_2, col1_3 = st.columns(3)
+        with col1_1:
+            df_session = st.session_state.df_table
 
-    col1_1, col1_2, col1_3 = st.columns(3)
-    with col1_1:
-        df_session = st.session_state.df_table
+            if 'itens' not in st.session_state:
+                st.session_state.itens = []
 
-        if 'itens' not in st.session_state:
-            st.session_state.itens = []
+            # Garante que o item existe no df_session
+            if cod_item in df_session["CD_ITEM"].values:
+                linha = df_session[df_session["CD_ITEM"] == cod_item].iloc[0]
+                novo_valor = st.number_input(
+                    "Alterar Qnt", value=int(linha["QNT_COMPRAR"]))
 
-        # Garante que o item existe no df_session
-        if cod_item in df_session["CD_ITEM"].values:
-            linha = df_session[df_session["CD_ITEM"] == cod_item].iloc[0]
-            novo_valor = st.number_input(
-                "Alterar Qnt", value=int(linha["QNT_COMPRAR"]))
+                # Atualiza diretamente no df original com a condição
+                st.session_state.df_table.loc[
+                    st.session_state.df_table["CD_ITEM"] == cod_item, "QNT_COMPRAR"
+                ] = novo_valor
 
-            # Atualiza diretamente no df original com a condição
-            st.session_state.df_table.loc[
-                st.session_state.df_table["CD_ITEM"] == cod_item, "QNT_COMPRAR"
-            ] = novo_valor
+                atualiza = False
 
-            atualiza = False
+                for item in st.session_state.itens:
+                    if item['cod'] == cod_item:
+                        if novo_valor != item["comprar"]:
+                            atualiza = True
 
-            for item in st.session_state.itens:
-                if item['cod'] == cod_item:
-                    if novo_valor != item["comprar"]:
-                        atualiza = True
+                        item.update(
+                            {'leadtime': item["leadtime"], 'duracao': item["duracao"], 'comprar': novo_valor})
 
-                    item.update(
-                        {'leadtime': item["leadtime"], 'duracao': item["duracao"], 'comprar': novo_valor})
+                if atualiza:
+                    st.rerun()
 
-            if atualiza:
-                st.rerun()
+        with col1_2:
+            ultima_compra = buscar_ultima_compra(
+                cd_empresa=cd_empresa, cd_item=cod_item).values[0]
+            ultima_comp = ultima_compra[0]
+            if not ultima_comp:
+                ultima_comp = "-"
 
-    with col1_2:
-        ultima_compra = buscar_ultima_compra(
-            cd_empresa=cd_empresa, cd_item=cod_item).values[0]
-        st.metric(label="Ultima Compra", value=ultima_compra[0], border=True)
-    with col1_3:
-        mv_12 = df[["MES_12"]].values[0]
-        if mv_12 != 0:
-            mv_12 = mv_12 / 12
-        st.metric(label="M.V", value=f"{mv_12[0]:.2f}", border=True)
+            st.metric(label="Ultima Compra", value=ultima_comp, border=True)
+        with col1_3:
+            mv_12 = df[["MES_12"]].values[0]
 
-    df_estoque_filial = estoque_filial(cd_item=cod_item)
-    st.dataframe(df_estoque_filial, hide_index=True, height=230,
-                 column_config={
-                     "CD_ITEM": st.column_config.NumberColumn("Similar"),
-                     "DS_MARCA": st.column_config.TextColumn("Marca", width=60),
-                     "QT_EMP1": st.column_config.NumberColumn("Emp 1", width=35),
-                     "QT_EMP5": st.column_config.NumberColumn("Emp 5", width=35),
-                     "QT_EMP7": st.column_config.NumberColumn("Emp 7", width=35),
-                     "QT_EMP52": st.column_config.NumberColumn("Emp 52", width=35)
-                 })
+            if mv_12 != 0:
+                mv_12 = mv_12 / 12
+            st.metric(label="M.V", value=f"{mv_12[0]:.2f}", border=True)
 
-    df_pedidos = pedidos_aberto(cd_empresa=cd_empresa, cd_item=cod_item)
-    st.dataframe(df_pedidos, hide_index=True, height=150,
-                 column_config={
-                     "NR_PEDIDO": st.column_config.NumberColumn("Nr Pedido"),
-                     "DT_PEDIDO": st.column_config.TextColumn("Data Pedido"),
-                     "QNTD": st.column_config.NumberColumn("Quant."),
-                 })
+        df_estoque_filial = estoque_filial(cd_item=cod_item)
+        st.dataframe(df_estoque_filial, hide_index=True, height=230,
+                    column_config={
+                        "CD_ITEM": st.column_config.NumberColumn("Similar"),
+                        "DS_MARCA": st.column_config.TextColumn("Marca", width=60),
+                        "QT_EMP1": st.column_config.NumberColumn("Emp 1", width=35),
+                        "QT_EMP5": st.column_config.NumberColumn("Emp 5", width=35),
+                        "QT_EMP7": st.column_config.NumberColumn("Emp 7", width=35),
+                        "QT_EMP52": st.column_config.NumberColumn("Emp 52", width=35)
+                    })
 
-    st.text_area("Aplicação", value=df["DS_APLICACAO"].values[0], height=250,
-                 disabled=True)
+        df_pedidos = pedidos_aberto(cd_empresa=cd_empresa, cd_item=cod_item)
+        st.dataframe(df_pedidos, hide_index=True, height=150,
+                    column_config={
+                        "NR_PEDIDO": st.column_config.NumberColumn("Nr Pedido"),
+                        "DT_PEDIDO": st.column_config.TextColumn("Data Pedido"),
+                        "QNTD": st.column_config.NumberColumn("Quant."),
+                    })
+
+        st.text_area("Aplicação", value=df["DS_APLICACAO"].values[0], height=250,
+                    disabled=True)
 
 
 @st.fragment()
