@@ -356,7 +356,7 @@ def compras_view():
 
             # Itera sobre cada linha do DataFrame principal
             for row in df_data.itertuples():
-                df_estoque = buscar_estoque_item(cd_item=row.CD_ITEM)
+                df_estoque = buscar_estoque_item(cd_item=row.CD_ITEM, cd_empresa=filters["empresa"])
 
                 # Cálculo do estoque atual com tratamento de valores vazios
                 estoque_atual = 0 if df_estoque.empty or isna(

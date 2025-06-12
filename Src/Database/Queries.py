@@ -48,12 +48,18 @@ def buscar_produtos(cd_empresa):
     return db.read_sql(query=_querie)
 
 
-def buscar_estoque_item(cd_item: int):
+def buscar_estoque_item(cd_empresa: int, cd_item: int):
+    empresas = {
+        40: 1,
+        50: 52,
+        60: 5,
+        7: 7
+    }
     _querie = f"""
     SELECT
         E.QT_ESTOQUE
     FROM ITEMLOCAL IL
-    INNER JOIN ESTOQUE E ON (E.CD_EMPRESA = 52
+    INNER JOIN ESTOQUE E ON (E.CD_EMPRESA = {empresas[cd_empresa]}
         AND E.CD_TIPOLOCAL = IL.CD_TIPOLOCAL
         AND E.CD_LOCAL = IL.CD_LOCAL
         AND E.CD_ITEM = IL.CD_ITEM)
